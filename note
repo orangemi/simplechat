@@ -1,0 +1,101 @@
+classes
+
+ServerEnd
+  id
+  _sid [Deprecated]
+  type
+  app:Application
+  socket:io.Socket
+  timeout [Deprecated]
+
+  init(options)
+  onLogin(options)
+  onDisconnecting()
+  onReconnect() [Deprecated]
+  disconnect(options)
+  onSend (sessions, router, data, callback)
+  onMessage(sender, router, data, callback)
+  onCommand(command, params, callback)
+  send(sessions, router, data, callback)
+  command(command, params, callback)
+  processMessage(sender, router, data, callback)
+  display()
+
+Session
+  id
+  _id
+  _cid
+  app:Application
+  connector:ServerEnd
+
+  init(options)
+  display()
+
+ClientSession
+  id
+  _id
+  _cid
+  app:Application
+  socket:io.Socket
+  attributes:{key:value} [Not Avail]
+  localAttributes:{key:value} [Not Avail]
+  backEnds { typeName : ServerEnd }
+  init(options)
+  onLogin(options)
+  onDisconnecting()
+  disconnect(options)
+  onMessage(router, data, callback)
+  send(router, data, callback)
+  setBackEnd(type, serverEnd)
+  display()
+
+SessionManager
+  app:Application
+  sessions:Array(Session|ClientSession)
+
+  init(options)
+  create(socket)
+  create2(options)
+  onConnect(socket)
+  send(sessions, router, data, callback)
+  drop(sessions)
+  filter(func)
+  get(_id)
+  childrenDisplay()
+
+ServerManager
+  app:Application
+  servers:Array(ServerEnd)
+
+  init(options)
+  create(data, socket)
+  onConnect(socket)
+  login(config, socket, options)
+  drop(servers)
+  filter(func)
+  get(id)
+  childrenDisplay()
+
+Application
+  pid
+  servers:[]
+
+  loadConfig(id)
+  loadConfigFile(file, options)
+  loadMasterConfig(options)
+  init(options)
+  start(options)
+  onStart()
+  isConnector()
+  isMaster()
+  startConnector()
+  startBackEndServer()
+  startMaster()
+  onMessage(router, func)
+  onCommand(command, func)
+  connectBackEnd(id)
+  display()
+
+TODO:
+1. 全局异常处理目前使用process.on('uncatchexception')来处理，100%不合适，需要寻找合适方法。
+
