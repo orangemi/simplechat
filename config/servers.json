@@ -1,50 +1,11 @@
-// {
-// 	// "master" : [
-// 	// 	{
-// 	// 		"id"			: "master",
-// 	// 		"host"			: "127.0.0.1",
-// 	// 		"port"			: 3333,
-// 	// 		"script"		: "/connectors/connector"
-// 	// 	}
-// 	// ],
-
-// 	"connector" : [
-// 		{
-// 			"id"			: "connector-1",
-// 			"host"			: "127.0.0.1",
-// 			"port"			: 3011,
-// 			"clientPort"	: 3001,
-// 			"public"		: true,
-// 			"script"		: "/connectors/connector"
-// 		},
-// 		{
-// 			"id"			: "connector-2",
-// 			"host"			: "127.0.0.1",
-// 			"port"			: 3012,
-// 			"clientPort"	: 3002,
-// 			"public"		: true,
-// 			"script"		: "/connectors/connector"
-// 		}
-// 	],
-// 	"spread" : [
-// 		{
-// 			"id" 			: "spread-1",
-// 			"host"			: "127.0.0.1",
-// 			"port"			: 3101,
-// 			"script"		: "/servers/spread"
-// 		}
-// 	]
-// }
-
 // ver 0.2
 [
-
 	{
 		"id"			: "connector-1",
 		"type"			: "connector",
 		"host"			: "127.0.0.1",
 		"port"			: 3011,
-		"clientPort"	: 3001,
+		"clientPort"	: 8001,
 		"public"		: true,
 		"script"		: "/connectors/connector"
 	}, {
@@ -52,14 +13,20 @@
 		"type"			: "connector",
 		"host"			: "127.0.0.1",
 		"port"			: 3012,
-		"clientPort"	: 3002,
+		"clientPort"	: 3001,
 		"public"		: true,
 		"script"		: "/connectors/connector"
 	}, {
-		"id" 			: "spread-1",
+		"id" 			: "chat-1",
 		"type"			: "spread",
 		"host"			: "127.0.0.1",
 		"port"			: 3101,
-		"script"		: "/servers/spread"
+		"script"		: "/servers/chat"
+	}, {
+		"id" 			: "pusher-1",
+		"type"			: "pusher",
+		"host"			: "127.0.0.1",
+		"port"			: 3201,
+		"script"		: "/servers/pusher"
 	}
 ]

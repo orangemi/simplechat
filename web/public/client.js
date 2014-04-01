@@ -5,21 +5,23 @@ var log = function(msg) {
 	console.log(date + ' ' + msg);
 }
 
-var host = 'localhost';
-var port = 3002;
+// var host = 'localhost';
+// var port = 3002;
+var host = '172.16.32.30';
+var port = 8001;
 log('connecting...');
 var socket = io.connect('ws://' + host + ':' + port, {'reconnect' : false});
 
 var timer;
 
+socket.on('message', function (router, data, callback) {
+	log(router + data.toString());
+	//console.log(arguments);
+	callback(200);
+});
+
 socket.on('connect', function() {
 	log('connected');
-
-	socket.on('message', function (router, data, callback) {
-		log(router + data.toString());
-		//console.log(arguments);
-		callback(200);
-	});
 
 	// socket.on('message', function (data, callback) {
 	// 	console.log(data);

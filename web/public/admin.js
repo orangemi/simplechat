@@ -6,7 +6,8 @@ var log = function(msg) {
 }
 
 log('connecting...');
-var socket = io.connect('ws://localhost:3333', {'reconnect' : false});
+//var socket = io.connect('ws://localhost:3333', {'reconnect' : false});
+var socket = io.connect('ws://172.16.32.30:3333', {'reconnect' : false});
 
 var timer;
 
