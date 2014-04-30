@@ -94,7 +94,7 @@ var spreading = function(eventId, cb) {
 		}
 
 		var eventInfo = result;
-		var receivers, params;
+		var receivers, params, realReceivers = [];
 
 		try {
 			receivers = eventInfo.users = JSON.parse(eventInfo.users);
@@ -114,12 +114,13 @@ var spreading = function(eventId, cb) {
 		}
 
 		receivers.forEach(function(userId) {
-			if (PushServer.users[userId]) sessions.push(PushServer.users[userId].session);
+			if (PushServer.users[userId]) {
+				realReceivers.push(userId);
+				sessions.push(PushServer.users[userId].session);
+			}
 		});
 
-		console.log('send to sessions (' + PushServer.users.length + ')');
-		console.log('send to sessions (' + receivers.length + ')');
-		console.log('send to sessions (' + sessions.length + ')');
+		console.log('send event ' + eventId + ' to sessions ' + realReceivers.length + ' / ' + receivers.length + ' [' + realReceivers.join(',') + ']');
 		if (sessions.length) app.sessionManager.send(sessions, 'push', params);
 		
 		cb();
@@ -140,9 +141,7 @@ var check = function(cb) {
 	spreading(eventReadIndex + 1, function() {
 		redisClient.incr('eventReadIndex', function(error, result) {
 			eventReadIndex = result;
-			process.nextTick(function() {
-				check(cb);
-			});
+			check(cb);
 		});
 	});
 };
@@ -162,7 +161,7 @@ var getEventReadIndex = function(cb) {
 };
 
 getEventIndex(function() {
-	getEventReadIndex(function(){
+	getEventReadIndex(function() {
 		check(function(error) {
 			console.log(error);
 		});
@@ -170,12 +169,14 @@ getEventIndex(function() {
 });
 
 redisSubscriber.subscribe("pushEvent2Player");
-redisSubscriber.on("message", function(channel, data) {
-	console.log("channel " + channel + " has published " + data);
-
-	getEventIndex(function() {
+redisSubscriber.on("message", function(channel, eventId) {
+	console.log("channel " + channel + " has published " + eventId);
+	if (eventReadIndex < eventIndex) {
+		eventIndex = eventId;
+	} else {
+		eventIndex = eventId;
 		check(function(error) {
 			console.log(error);
 		});
-	});
+	}
 });

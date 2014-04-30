@@ -62,13 +62,16 @@ app.onMessage('login', function (session, data, next) {
 });
 
 app.on('session_disconnect', function (session) {
-//	var serverEnd = app.serverManager.get('spread-1');
-	var serverEnd = app.serverManager.get('chat-1');
-	if (!serverEnd) return;
-	serverEnd.command('session_offline', { _id : session._id });
+	if (session.user) console.log('user logout ' + session.user.id);
+	
+	var serverEnd;
+	serverEnd = app.serverManager.get('chat-1');
+	if (serverEnd) serverEnd.command('session_offline', { _id : session._id });
+	serverEnd = app.serverManager.get('pusher-1');
+	if (serverEnd) serverEnd.command('session_offline', { _id : session._id });
 });
 
-//TODO test api 
+//TODO test api
 app.onMessage('ping', function (session, data, next) {
 	console.log('ping from ' + session.id);
 	next(200);

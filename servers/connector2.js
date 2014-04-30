@@ -12,9 +12,9 @@ app.on('session_connect', function (session) {
 	//serverEnd.command('session_online', { _id : session._id });
 	console.log('session connected wait login...');
 
-//	session.loginTimer = setTimeout(function() {
-//		session.disconnect({positive : true});
-//	})
+	session.loginTimer = setTimeout(function() {
+		session.disconnect({positive : true});
+	}, 5000);
 });
 
 app.onMessage('login', function (session, data, next) {
@@ -28,7 +28,7 @@ app.onMessage('login', function (session, data, next) {
 
 	if (session.user) {
 		next(400, 'you have already logined');
-		return
+		return;
 	}
 
 	//TODO verify userid or username or password or sessionkey or sth.
@@ -40,34 +40,38 @@ app.onMessage('login', function (session, data, next) {
 	//TODO 重复登录检查需要 通知chat-1，chat-1需要检查session和uid关联，并替换user的session；如果用户真实下线，也需要同时检查session和user的关联，此方案并没有踢走原用户，只是不能让客户端收到相同user_id的消息
 	//TODO 由chat-1的处理也可以化为login-1统一来处理。
 
-	// var oldUser = users[userId];
-	// if (oldUser) {
-	// 	oldUser.session.disconnect({positive : true});
-	// }
+	var oldUser = users[userId];
+	if (oldUser) {
+		oldUser.session.disconnect({positive : true});
+	}
 	
 	var user = users[userId] = { id : userId, session : session };
 	session.user = user;
 
-	var serverEnd = app.serverManager.get('chat-1');
-	if (!serverEnd) {
-		console.log('chat-1 is not ready');
-		next(500);
-		return;
-	}
+	var serverEnd;
+	serverEnd = app.serverManager.get('chat-1');
+	if (serverEnd) serverEnd.command('user_online', { userId : userId, _id : session._id });
+	else console.log('chat-1 is not ready');
 
-	serverEnd.command('user_online', { userId : userId, _id : session._id });
+	serverEnd = app.serverManager.get('pusher-1');
+	if (serverEnd) serverEnd.command('user_online', { userId : userId, _id : session._id });
+	else console.log('pusher-1 is not ready');
+	
 	next(200);
 	if (session.loginTimer) clearTimeout(session.loginTimer);
 });
 
 app.on('session_disconnect', function (session) {
-//	var serverEnd = app.serverManager.get('spread-1');
-	var serverEnd = app.serverManager.get('chat-1');
-	if (!serverEnd) return;
-	serverEnd.command('session_offline', { _id : session._id });
+	if (session.user) console.log('user logout ' + session.user.id);
+
+	var serverEnd;
+	serverEnd = app.serverManager.get('chat-1');
+	if (serverEnd) serverEnd.command('session_offline', { _id : session._id });
+	serverEnd = app.serverManager.get('pusher-1');
+	if (serverEnd) serverEnd.command('session_offline', { _id : session._id });
 });
 
-//TODO test api 
+//TODO test api
 app.onMessage('ping', function (session, data, next) {
 	console.log('ping from ' + session.id);
 	next(200);
