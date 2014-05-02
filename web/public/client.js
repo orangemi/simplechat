@@ -3,7 +3,7 @@ var log = function(msg) {
 	date = date.format("[yyyy-mm-dd HH:MM:ss]");
 	$("<div>").html(date + ' ' + msg).prependTo($("body"));
 	console.log(date + ' ' + msg);
-}
+};
 
 // var host = 'localhost';
 // var port = 3002;
@@ -16,33 +16,34 @@ var timer;
 
 socket.on('message', function (router, data, callback) {
 	log(router + data.toString());
+	console.log(data);
 	//console.log(arguments);
 	callback(200);
 });
 
 socket.on('connect', function() {
 	log('connected');
+	
+	var uid = 105;
 
-	// socket.on('message', function (data, callback) {
-	// 	console.log(data);
-	// 	callback(200);
-	// 	//log(data.toString());
-	// 	//console.log(arguments);
-	// 	//callback(200);
-	// });
+	log('start login uid: ' + uid);
+	socket.emit('message', 'connector.login', {username:'',u_id:uid}, function(code) {
+		log('login response: ' + code);
+	});
 
-	setTimeout(function() {
-		log('send spread.ping');
-		socket.emit('message', 'spread.ping', {}, function(code) {
-			log('response on spread.ping:' + code);
-		})
-		setTimeout(function() {
-			log('send connector.ping');
-			socket.emit('message', 'connector.ping', {}, function(code) {
-				log('response on connector.ping:' + code);
-			})
-		}, 2000);
-	}, 2000);
+
+	// setTimeout(function() {
+	// 	log('send spread.ping');
+	// 	socket.emit('message', 'spread.ping', {}, function(code) {
+	// 		log('response on spread.ping:' + code);
+	// 	})
+	// 	setTimeout(function() {
+	// 		log('send connector.ping');
+	// 		socket.emit('message', 'connector.ping', {}, function(code) {
+	// 			log('response on connector.ping:' + code);
+	// 		})
+	// 	}, 2000);
+	// }, 2000);
 
 	// timer = setInterval(function() {
 	// 	log('send connector.ping');
