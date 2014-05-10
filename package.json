@@ -1,0 +1,14 @@
+{
+	"dependencies": {
+		"node-json-minify" : "0.1.3-a",
+		"underscore" : "1.6.0",
+		"socket.io" : "1.0.0-pre2",
+		"socket.io-client" : "1.0.0-pre2"
+	},
+	"contributors": [
+		{
+			"name": "Orange Mi",
+			"email": "orgmi@sina.com"
+		}
+	]
+}
