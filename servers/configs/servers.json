@@ -1,0 +1,36 @@
+// ver 0.2
+[
+	{
+		"id"			: "connector-1",
+		"type"			: "connector",
+		"host"			: "127.0.0.1",
+		"port"			: 3011,
+		"clientPort"	: 8001,
+		"public"		: true,
+		"script"		: "/servers/connector",
+		"logfile"		: "connector.log"
+	}, {
+		"id"			: "connector-2",
+		"type"			: "connector",
+		"host"			: "127.0.0.1",
+		"port"			: 3012,
+		"clientPort"	: 3001,
+		"public"		: true,
+		"script"		: "/servers/connector2",
+		"logfile"		: "connector2.log"
+	}, {
+		"id" 			: "chat-1",
+		"type"			: "spread",
+		"host"			: "127.0.0.1",
+		"port"			: 3101,
+		"script"		: "/servers/chat",
+		"logfile"		: "connector.log"
+	}, {
+		"id" 			: "pusher-1",
+		"type"			: "pusher",
+		"host"			: "127.0.0.1",
+		"port"			: 3201,
+		"script"		: "/servers/pusher",
+		"logfile"		: "connector.log"
+	}
+]
