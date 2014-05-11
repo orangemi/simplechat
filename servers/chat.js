@@ -2,7 +2,7 @@ var argvs = process.argv.slice(2);
 var appId = argvs.shift() || 'chat-1'; // appId
 
 var App = require('../lib/Application');
-var app = new App({id : appId});
+var app = new App({ id : appId, dir : __dirname });
 
 var redisConfig = {
 	"host" : "172.16.32.30",

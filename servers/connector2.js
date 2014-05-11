@@ -2,7 +2,7 @@ var argvs = process.argv.slice(2);
 var appId = argvs.shift() || 'connector-2'; // appId
 
 var App = require('../lib/Application2');
-var app = new App({id : appId});
+var app = new App({ id : appId, dir : __dirname });
 
 var users = {};
 
