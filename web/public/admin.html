@@ -1,13 +1,30 @@
 <!DOCTYPE>
 <html>
 <head>
+	<link href="admin.css" type="text/css" rel="stylesheet">
 	<script src="jquery-2.1.0.js"></script>
+	<script src="iscroll-5.1.1.js"></script>
 	<!-- <script src="socket.io-client-0.9.16.js"></script> -->
-	<script src="socket.io-client-1.0.0-pre.js"></script>
+	<script src="socket.io-client-1.0.0-pre2.js"></script>
 	<script src="date.js"></script>
 </head>
 <body>
-	<h1>Admin World</h1>
+	<h1>[Admin] SimpleChat</h1>
+	<div class="main">
+		<div class="server_list"></div>
+		<div class="server_detail"></div>
+	</div>
+	<div class="output">
+		<div class="buttons">
+			<button class="button_close">Close</button>
+			<button class="button_clear">Clear</button>
+		</div>
+		<div class="title">Output</div>
+		<hr class="clear"></hr>
+		<div class="lines">
+			<div class="scroller"></div>
+		</div>
+	</div>
 </body>
 	<script src="admin.js"></script>
 </html>

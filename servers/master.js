@@ -1,6 +1,4 @@
-JSON.minify = JSON.minify || require('node-json-minify');
 var Application = require('../lib/Application');
-
 var app = new Application({ id: 'master', dir: __dirname });
 
 app.on('server_connect', function (server) {
@@ -77,6 +75,5 @@ app.onMessage('ping', function (params, next) {
 app.onMessage('login', function (params, next) {
 
 });
-
 
 app.start();

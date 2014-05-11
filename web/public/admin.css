@@ -1,0 +1,9 @@
+.hide { display: none; }
+.clear { clear: both; }
+
+.output {}
+.output>.title { font-size: 20px; font-weight: bold; height: 22px; line-height: 22px; }
+.output>.buttons { float: right; }
+.output>.buttons>button { float: right; }
+.output>.lines { height: 200px; overflow: hidden; position: relative; z-index: 1 }
+.output>.lines>.scroller { word-break: break-all; font-size: 9px; }

@@ -1,9 +1,10 @@
 var Http = require('http');
-require('./utils/date.js');
+var mime = require('mime');
+require('dateformatter');
 
 var log = function(msg) {
 	var date = new Date();
-	date = date.format("[yyyy-mm-dd HH:MM:ss]");
+	date = date.format("[Y-m-d H:i:s]");
 	console.log(date + " " + msg);
 };
 
@@ -33,9 +34,6 @@ var http = Http.createServer(function(req, res) {
 
 	//static
 	var filename = root + path;
-	var type = /\.(\w+)$/.test(filename) ? /\.(\w+)$/.exec(filename)[1] : '';
-	var mimetype = mimes[type] ? mimes[type] : mimes[''];
-
 	require('fs').readFile(filename, function(err, data) {
 		if (err) {
 			res.writeHead(404);
@@ -43,7 +41,7 @@ var http = Http.createServer(function(req, res) {
 			log(' GET ' + req.url + ' 404');
 			return;
 		}
-		res.writeHead(200, {'Content-Type' : mimetype});
+		res.writeHead(200, { 'Content-Type' : mime.lookup(filename) });
 		res.write(data);
 		res.end();
 		log('GET ' + req.url + ' 200');
