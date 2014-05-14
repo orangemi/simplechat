@@ -2,6 +2,7 @@
 	"name" : "simplechat",
 	"version" : "0.1.0",
 	"dependencies": {
+		"redis" : "*",
 		"mime" : "*",
 		"node-json-minify" : "*",
 		"dateformatter" : "*",
