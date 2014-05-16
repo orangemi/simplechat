@@ -4,7 +4,7 @@ var appId = argvs.shift() || 'connector-1'; // appId
 var App = require('../lib/Application');
 var app = new App({ id : appId, dir : __dirname });
 
-var users = {};
+//var users = {};
 
 app.on('session_connect', function (session) {
 	//TODO when a session is connected.
@@ -13,6 +13,7 @@ app.on('session_connect', function (session) {
 	console.log('session connected wait login...');
 
 	session.loginTimer = setTimeout(function() {
+		console.log('log timeout');
 		session.disconnect({positive : true});
 	}, 5000);
 });
@@ -20,13 +21,13 @@ app.on('session_connect', function (session) {
 app.onMessage('login', function (session, data, next) {
 	console.log('session_logined');
 	data = data || {};
-	var userId = data.u_id || data.uid || data.id;
-	if (!userId) {
-		next(400, 'no username');
-		return;
-	}
+	// var userId = data.u_id || data.uid || data.id;
+	// if (!userId) {
+	// 	next(400, 'no username');
+	// 	return;
+	// }
 
-	if (session.user) {
+	if (session.userId) {
 		next(400, 'you have already logined');
 		return;
 	}
@@ -40,35 +41,49 @@ app.onMessage('login', function (session, data, next) {
 	//TODO 重复登录检查需要 通知chat-1，chat-1需要检查session和uid关联，并替换user的session；如果用户真实下线，也需要同时检查session和user的关联，此方案并没有踢走原用户，只是不能让客户端收到相同user_id的消息
 	//TODO 由chat-1的处理也可以化为login-1统一来处理。
 
-	var oldUser = users[userId];
-	if (oldUser) {
-		oldUser.session.disconnect({positive : true});
-	}
-	
-	var user = users[userId] = { id : userId, session : session };
-	session.user = user;
-
 	var serverEnd;
-	serverEnd = app.serverManager.get('chat-1');
-	if (serverEnd) serverEnd.command('user_online', { userId : userId, _id : session._id });
-	else console.log('chat-1 is not ready');
+	serverEnd = app.serverManager.get('gate-1');
+	if (!serverEnd) {
+		next(400, 'sorry something wrong with the gate');
+		app.logger.log('gate not connected');
+		return;
+	}
 
-	serverEnd = app.serverManager.get('pusher-1');
-	if (serverEnd) serverEnd.command('user_online', { userId : userId, _id : session._id });
-	else console.log('pusher-1 is not ready');
+	data._id = session._id;
+	serverEnd.command('user_login', data, function (code, message, userId) {
+		console.log('get login response', arguments);
+		console.log('send response to client { code: ' + code  + ' message: ' + message + ' }');
+		next(code, message);
+		if (code == 200) {
+			if (session.loginTimer) clearTimeout(session.loginTimer);
+			//var user = users[userId] = { id : userId, session : session };
+			session.userId = userId;
 
-	next(200);
-	if (session.loginTimer) clearTimeout(session.loginTimer);
+			var serverEnd;
+			serverEnd = app.serverManager.get('chat-1');
+			if (serverEnd) serverEnd.command('user_online', { id : userId, _id : session._id });
+			else console.log('chat-1 is not ready');
+
+			serverEnd = app.serverManager.get('pusher-1');
+			if (serverEnd) serverEnd.command('user_online', { id : userId, _id : session._id });
+			else console.log('pusher-1 is not ready');
+		} 
+	});
+
+	// var oldUser = users[userId];
+	// if (oldUser) {
+	// 	oldUser.session.disconnect({positive : true});
+	// }
 });
 
 app.on('session_disconnect', function (session) {
-	if (session.user) console.log('user logout ' + session.user.id);
+	if (session.userId) console.log('user logout ' + session.userId);
 	
 	var serverEnd;
 	serverEnd = app.serverManager.get('chat-1');
-	if (serverEnd) serverEnd.command('session_offline', { _id : session._id });
+	if (serverEnd) serverEnd.command('user_offline', { _id : session._id });
 	serverEnd = app.serverManager.get('pusher-1');
-	if (serverEnd) serverEnd.command('session_offline', { _id : session._id });
+	if (serverEnd) serverEnd.command('user_offline', { _id : session._id });
 });
 
 //TODO test api
@@ -79,11 +94,23 @@ app.onMessage('ping', function (session, data, next) {
 
 app.onCommand('list_users', function (server, params, next) {
 	var result = [];
-	for (var id in users) {
-		var user = users[id];
-		result.push({ id : user.id, sessionId : user.session._id });
-	}
+	app.sessionManager.filter(function (session) {
+	 	result.push({ id : session.userId, _id : session._id });
+	});
 	next(200, result);
 });
+
+app.onCommand('kick_session', function (server, params, next) {
+	params = params || {};
+	var _id = params._id;
+	if (!_id) return next(500);
+	var session = app.sessionManager.get(_id);
+	//console.log(app.sessionManager.sessions);
+	console.log('kick_session3 : ' + _id);
+	if (!session) return next(400);
+	console.log('kick_session4 : ' + _id);
+	session.disconnect({ positive: true });
+});
+
 
 app.start();

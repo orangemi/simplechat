@@ -4,7 +4,7 @@
 		"id"			: "connector-1",
 		"type"			: "connector",
 		"host"			: "127.0.0.1",
-		"port"			: 3011,
+		"port"			: 3001,
 		"clientPort"	: 8001,
 		"public"		: true,
 		"script"		: "/servers/connector",
@@ -13,24 +13,31 @@
 		"id"			: "connector-2",
 		"type"			: "connector",
 		"host"			: "127.0.0.1",
-		"port"			: 3012,
-		"clientPort"	: 3001,
+		"port"			: 3002,
+		"clientPort"	: 8002,
 		"public"		: true,
 		"script"		: "/servers/connector2",
 		"logfile"		: "connector2.log"
 	}, {
 		"id" 			: "chat-1",
-		"type"			: "spread",
+		"type"			: "chat",
 		"host"			: "127.0.0.1",
 		"port"			: 3101,
 		"script"		: "/servers/chat",
-		"logfile"		: "connector.log"
+		"logfile"		: "chat.log"
+	}, {
+		"id" 			: "gate-1",
+		"type"			: "gate",
+		"host"			: "127.0.0.1",
+		"port"			: 3102,
+		"script"		: "/servers/chat",
+		"logfile"		: "gate.log"
 	}, {
 		"id" 			: "pusher-1",
 		"type"			: "pusher",
 		"host"			: "127.0.0.1",
-		"port"			: 3201,
+		"port"			: 3103,
 		"script"		: "/servers/pusher",
-		"logfile"		: "connector.log"
+		"logfile"		: "pusher.log"
 	}
 ]

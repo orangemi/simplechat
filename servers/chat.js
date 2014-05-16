@@ -71,7 +71,7 @@ var ChatServer = {
 			console.log('getting ' + result.length + ' users...');
 			result.forEach(function (user) {
 				var session = app.sessionManager.create2({
-					_id : user.sessionId,
+					_id : user._id,
 					connector : server
 				});
 
@@ -82,46 +82,59 @@ var ChatServer = {
 				}
 
 				var user = self.users[user.id] = { id : user.id, session : session };
-				self.sessions[user.sessionId] = session;
+				self.sessions[user._id] = session;
 			});
 		});
 	}
 };
 
 
-app.onCommand('connector::user_online', function (server, params, next) {
-	var session = app.sessionManager.create2({ _id: params._id, connector: server });
-	var olduser = ChatServer.users[params.userId];
-	if (olduser) {
-		var oldsession = olduser.session;
-		delete ChatServer.sessions[oldsession.id];
+app.onCommand('connector::user_online', function (connector, params, next) {
+	var session;
+	session = app.sessionManager.get(params._id)
+			|| app.sessionManager.create2({ _id: params._id, connector: connector });
+	var user = ChatServer.users[params.id] || { id : params.id };
+	if (user.timer) {
+		clearTimeout(user.timer);
+		delete user.timer;
+		console.log('user reconnected: ' + user.id);
 	}
 
-	var user = ChatServer.users[params.userId] = { id : params.userId, session : session };
-	ChatServer.sessions[session.id] = user;
+	user.session = session;
+	session.user = user;
 
 	console.log('user add ' + user.id);
 
 	next(200);
 });
 
-app.onCommand('connector::user_offline', function (server, params, next) {
+app.onCommand('connector::user_offline', function (connector, params, next) {
 	var session = app.sessionManager.get(params._id);
-	var user = ChatServer.sessions[session.id];
+	if (!session) return;
+
+	var user = session.user;
+//	console.log('user disconnect: ' + user.id);
 	if (!user || user.session != session) {
+		app.sessionManager.drop(session);
 		next(200);
 		return;
 	}
 
-	//TODO clear rooms;
-	for (var name in groups) {
-		var group = groups[name];
-		var index = group.indexOf(user.id);
-		if (index >= 0) group.splice(index, 1);
-		if (!group.length) delete groups[name];
-	}
+	app.sessionManager.drop(session);
+	//TODO clear rooms in 5s if nobody login;
+	console.log('wait 5s for disconnect user: ' + user.id);
+	user.timer = setTimeout(function() {
+		console.log('user disconnected: ' + user.id);
+		user.timer = null;
+		for (var name in ChatServer.groups) {
+			var group = ChatServer.groups[name];
+			var index = group.indexOf(user.id);
+			if (index >= 0) group.splice(index, 1);
+			if (!group.length) delete ChatServer.groups[name];
+		}
+		delete ChatServer.users[user.id];
+	}, 5000);
 
-	delete users[user.id];
 	next(200);
 });
 

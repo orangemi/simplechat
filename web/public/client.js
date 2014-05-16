@@ -6,9 +6,12 @@ var log = function(msg) {
 };
 
 // var host = 'localhost';
-// var port = 3002;
-var host = '172.16.32.30';
+// var port = 8001;
+//var host = '172.16.32.30';
+//var port = 8001;
+var host = 'localhost';
 var port = 8001;
+
 log('connecting...');
 var socket = io.connect('ws://' + host + ':' + port, {'reconnect' : false});
 
@@ -21,16 +24,33 @@ socket.on('message', function (router, data, callback) {
 	callback(200);
 });
 
+var username = 'mwj1';
+var password = '1';
+
+
+
+
 socket.on('connect', function() {
 	log('connected');
-	
-	var uid = 105;
 
-	log('start login uid: ' + uid);
-	socket.emit('message', 'connector.login', {username:'',u_id:uid}, function(code) {
-		log('login response: ' + code);
+	$.ajax({
+		type : 'GET',
+		url  : 'http://localhost/ourwar/server/game/auth/login',
+		data : { username:username, password: password, action:'normal' },
+		dataType: 'jsonp',
+		jsonp: "jsoncallback",
+		success : function(data) {
+			var session = data.result.key;
+			next(session);
+		}
 	});
 
+	next = function(session) {
+		log('start login session: ' + session);
+		socket.emit('message', 'connector.login', { key : session }, function(code) {
+			log('login response: ' + code);
+		});
+	};
 
 	// setTimeout(function() {
 	// 	log('send spread.ping');

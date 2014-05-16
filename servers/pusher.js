@@ -24,7 +24,7 @@ var PushServer = {
 			console.log('getting ' + result.length + ' users...');
 			result.forEach(function (user) {
 				var session = app.sessionManager.create2({
-					_id : user.sessionId,
+					_id : user._id,
 					connector : server
 				});
 
@@ -35,7 +35,7 @@ var PushServer = {
 				}
 
 				var newuser = self.users[user.id] = { id : user.id, session : session };
-				self.sessions[newuser.sessionId] = session;
+				self.sessions[user._id] = session;
 			});
 		});
 	}
@@ -43,13 +43,13 @@ var PushServer = {
 
 app.onCommand('connector::user_online', function (server, params, next) {
 	var session = app.sessionManager.create2({ _id: params._id, connector: server });
-	var olduser = PushServer.users[params.userId];
+	var olduser = PushServer.users[params.id];
 	if (olduser) {
 		var oldsession = olduser.session;
 		delete PushServer.sessions[oldsession.id];
 	}
 
-	var user = PushServer.users[params.userId] = { id : params.userId, session : session };
+	var user = PushServer.users[params.id] = { id : params.id, session : session };
 	PushServer.sessions[session.id] = user;
 
 	console.log('user add ' + user.id);
