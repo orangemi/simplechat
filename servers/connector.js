@@ -4,13 +4,14 @@ var appId = argvs.shift() || 'connector-1'; // appId
 var App = require('../lib/Application');
 var app = new App({ id : appId, dir : __dirname });
 
-//var users = {};
-
 app.on('session_connect', function (session) {
 	//TODO when a session is connected.
 	//wait user login
-	//serverEnd.command('session_online', { _id : session._id });
 	console.log('session connected wait login...');
+
+	session.setBackEnd('gate', app.serverManager.get('gate-1'));
+	session.setBackEnd('chat', app.serverManager.get('chat-1'));
+	session.setBackEnd('pusher', app.serverManager.get('pusher-1'));
 
 	session.loginTimer = setTimeout(function() {
 		console.log('log timeout');
@@ -18,62 +19,23 @@ app.on('session_connect', function (session) {
 	}, 5000);
 });
 
-app.onMessage('login', function (session, data, next) {
+app.onCommand('gate::user_login', function (server, params) {
+	var session = app.sessionManager.get(params._id);
+	if (!session) return;
 	console.log('session_logined');
-	data = data || {};
-	// var userId = data.u_id || data.uid || data.id;
-	// if (!userId) {
-	// 	next(400, 'no username');
-	// 	return;
-	// }
-
-	if (session.userId) {
-		next(400, 'you have already logined');
-		return;
-	}
-
-	//TODO verify userid or username or password or sessionkey or sth.
-
-	//TODO 重复登录检查可以由chat-1发起，chat-1发现有重复登录，将旧的用户Session踢出。
-	//TODO 重复登录检查可以依赖于中间存储层(memcache / redis)
-	//TODO 重复登录检查也可以由gate-1发起，gate-1生成唯一密钥发给connector和客户端，客户端login到connector时携带密钥，connector检查后删除密钥，好像无法消除重复登录。
-	//TODO 重复登录检查需要检查所有connector？re:容易并发登录
-	//TODO 重复登录检查需要 通知chat-1，chat-1需要检查session和uid关联，并替换user的session；如果用户真实下线，也需要同时检查session和user的关联，此方案并没有踢走原用户，只是不能让客户端收到相同user_id的消息
-	//TODO 由chat-1的处理也可以化为login-1统一来处理。
+	clearTimeout(session.loginTimer);
+	delete session.loginTimer;
+	session.userId = params.userId;
 
 	var serverEnd;
-	serverEnd = app.serverManager.get('gate-1');
-	if (!serverEnd) {
-		next(400, 'sorry something wrong with the gate');
-		app.logger.log('gate not connected');
-		return;
-	}
+	serverEnd = app.serverManager.get('chat-1');
+	if (serverEnd) serverEnd.command('user_online', { id : params.userId, _id : session._id });
+	else console.log('chat-1 is not ready');
 
-	data._id = session._id;
-	serverEnd.command('user_login', data, function (code, message, userId) {
-		console.log('get login response', arguments);
-		console.log('send response to client { code: ' + code  + ' message: ' + message + ' }');
-		next(code, message);
-		if (code == 200) {
-			if (session.loginTimer) clearTimeout(session.loginTimer);
-			//var user = users[userId] = { id : userId, session : session };
-			session.userId = userId;
+	serverEnd = app.serverManager.get('pusher-1');
+	if (serverEnd) serverEnd.command('user_online', { id : params.userId, _id : session._id });
+	else console.log('pusher-1 is not ready');
 
-			var serverEnd;
-			serverEnd = app.serverManager.get('chat-1');
-			if (serverEnd) serverEnd.command('user_online', { id : userId, _id : session._id });
-			else console.log('chat-1 is not ready');
-
-			serverEnd = app.serverManager.get('pusher-1');
-			if (serverEnd) serverEnd.command('user_online', { id : userId, _id : session._id });
-			else console.log('pusher-1 is not ready');
-		} 
-	});
-
-	// var oldUser = users[userId];
-	// if (oldUser) {
-	// 	oldUser.session.disconnect({positive : true});
-	// }
 });
 
 app.on('session_disconnect', function (session) {

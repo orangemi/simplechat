@@ -15,7 +15,6 @@ var redisSubscriber = redis.createClient(redisConfig.port, redisConfig.host);
 
 var PushServer = {
 	users : {},
-	sessions : {},
 	syncUser : function(server) {
 		var self = this;
 		console.log('start sync users...');
@@ -41,33 +40,47 @@ var PushServer = {
 	}
 };
 
-app.onCommand('connector::user_online', function (server, params, next) {
-	var session = app.sessionManager.create2({ _id: params._id, connector: server });
-	var olduser = PushServer.users[params.id];
-	if (olduser) {
-		var oldsession = olduser.session;
-		delete PushServer.sessions[oldsession.id];
+app.onCommand('connector::user_online', function (connector, params, next) {
+	var session;
+	session = app.sessionManager.get(params._id)
+			|| app.sessionManager.create2({ _id: params._id, connector: connector });
+	var user = PushServer.users[params.id] || { id : params.id };
+	if (user.timer) {
+		clearTimeout(user.timer);
+		delete user.timer;
+		console.log('user reconnected: ' + user.id);
 	}
 
-	var user = PushServer.users[params.id] = { id : params.id, session : session };
-	PushServer.sessions[session.id] = user;
+	user.session = session;
+	session.user = user;
 
 	console.log('user add ' + user.id);
 
 	next(200);
 });
 
-app.onCommand('connector::user_offline', function (server, params, next) {
+app.onCommand('connector::user_offline', function (connector, params, next) {
 	var session = app.sessionManager.get(params._id);
-	var user = PushServer.sessions[session.id];
+	if (!session) return;
+
+	var user = session.user;
+//	console.log('user disconnect: ' + user.id);
 	if (!user || user.session != session) {
+		app.sessionManager.drop(session);
 		next(200);
 		return;
 	}
 
-	delete PushServer.users[user.id];
+	app.sessionManager.drop(session);
+	//TODO clear rooms in 5s if nobody login;
+	console.log('wait 5s for disconnect user: ' + user.id);
+	user.timer = setTimeout(function() {
+		console.log('user disconnected: ' + user.id);
+		user.timer = null;
+		delete PushServer.users[user.id];
+	}, 5000);
+
 	next(200);
-	//TODO 不踢人有bug
 });
 
 app.on('server_connect', function (server) {

@@ -12,7 +12,6 @@ var redisConfig = {
 };
 
 var memcacheClient = new memcache.Client(memcacheConfig.port, memcacheConfig.host);
-var redisClient = redis.createClient(redisConfig.port, redisConfig.host);
 memcacheClient.on('error', function(err) {
 	console.log(err);
 	var self = this;
@@ -30,38 +29,63 @@ var app = new App({ id : appId, dir : __dirname });
 
 var users = {};
 
-
-app.onCommand('connector::user_login', function (connector, data, next) {
-	data = data || {};
-	//var userId = data.u_id || data.uid || data.id;
-	var key = data.key;
-	var _id = data._id;
-
+app.onMessage('login', function (session, params, next) {
+	if (app.sessionManager.get(session._id)) return next(403, 'you cannot relogin');
+	params = params || {};
+	var key = params.key;
 	if (!key || typeof(key) !== 'string') {
 		next(403, 'no userid or session');
 		return;
 	}
+
 	memcacheClient.get('Session::' + key, function (err, uid) {
 		console.log('login key: ' + key + ' , _id: ' + _id + ' , uid: ' + uid);
+
 		if (!uid) next(403, 'invalid session');
 		var olduser = users[uid];
-		if (olduser && olduser.session && olduser.session._id != _id) {
-			//app.sessionManager.send([olduser.session], 'logout', message);
+		if (olduser && olduser.session && olduser.session._id != session._id) {
 			//TODO kick old session (olduser.session)
-			app.sessionManager.drop(olduser.session);
+			app.sessionManager.send([olduser.session], 'logout', message);
 			connector.command('kick_session', { _id : olduser.session._id });
+			app.sessionManager.drop(olduser.session);
 		}
-		var session = app.sessionManager.create2({ _id: _id, connector: connector, id: uid });
+		session = app.sessionManager.create2(session);
 		var user = users[uid] = {
 			id : uid,
-			session : session
+			session : localSession
 		};
-		//users[uid] = user;
 		console.log('return 200 ' + uid);
 		next(200, '', uid);
-		return;
-	});
 
+		session.connector.command('user_login', { userId: uid, _id: session._id});
+
+	});
+});
+
+app.onCommand('connector::session_disconnect', function (server, params) {
+	var session = app.sessionManager.get(params._id);
+	if (!session) return;
+	app.sessionManager.drop(session);
 });
 
 app.start();
+
+var redisSubscriber = redis.createClient(redisConfig.port, redisConfig.host);
+redisSubscriber.subscribe("kick_user");
+redisSubscriber.on("message", function(channel, userIds) {
+	try {
+		userIds = JSON.parse(userIds);
+	} catch (e) {
+		console.log(e);
+	}
+
+	userIds.forEach(function(userId) {
+		var user = users[userId];
+		if (!user) return;
+		var session = user.session;
+		session.connector.command('kick_session', { _id : session._id });
+		app.sessionManager.drop(session);
+		delete users[userId];
+	});
+
+});
