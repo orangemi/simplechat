@@ -1,0 +1,20 @@
+// ver 0.2
+[
+	{
+		"id"			: "connector-1",
+		"type"			: "connector",
+		"host"			: "127.0.0.1",
+		"port"			: 3001,
+		"clientPort"	: 8001,
+		"public"		: true,
+		"script"		: "/minichat/connector",
+		"logfile"		: "connector.log"
+	}, {
+		"id" 			: "chat-1",
+		"type"			: "chat",
+		"host"			: "127.0.0.1",
+		"port"			: 3101,
+		"script"		: "/minichat/chat",
+		"logfile"		: "chat.log"
+	}
+]
