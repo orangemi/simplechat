@@ -39,20 +39,21 @@ app.onMessage('login', function (session, params, next) {
 	}
 
 	memcacheClient.get('Session::' + key, function (err, uid) {
-		console.log('login key: ' + key + ' , _id: ' + _id + ' , uid: ' + uid);
+		console.log('login key: ' + key + ' , _id: ' + session._id + ' , uid: ' + uid);
 
-		if (!uid) next(403, 'invalid session');
+		if (!uid) return next(403, 'invalid session');
 		var olduser = users[uid];
 		if (olduser && olduser.session && olduser.session._id != session._id) {
 			//TODO kick old session (olduser.session)
-			app.sessionManager.send([olduser.session], 'logout', message);
-			connector.command('kick_session', { _id : olduser.session._id });
+			app.sessionManager.send([olduser.session], 'logout', 'invalid session');
+			olduser.session.connector.command('kick_session', { _id : olduser.session._id });
 			app.sessionManager.drop(olduser.session);
+			delete users[uid];
 		}
 		session = app.sessionManager.create2(session);
 		var user = users[uid] = {
 			id : uid,
-			session : localSession
+			session : session
 		};
 		console.log('return 200 ' + uid);
 		next(200, '', uid);

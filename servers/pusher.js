@@ -30,11 +30,10 @@ var PushServer = {
 				var olduser = self.users[user.id];
 				if (olduser) {
 					var oldsession = olduser.session;
-					delete self.sessions[oldsession.id];
 				}
 
 				var newuser = self.users[user.id] = { id : user.id, session : session };
-				self.sessions[user._id] = session;
+				session.user = newuser;
 			});
 		});
 	}
@@ -52,7 +51,7 @@ app.onCommand('connector::user_online', function (connector, params, next) {
 	}
 
 	user.session = session;
-	session.user = user;
+	PushServer.users[params.id] = session.user = user;
 
 	console.log('user add ' + user.id);
 
@@ -73,12 +72,12 @@ app.onCommand('connector::user_offline', function (connector, params, next) {
 
 	app.sessionManager.drop(session);
 	//TODO clear rooms in 5s if nobody login;
-	console.log('wait 5s for disconnect user: ' + user.id);
+	console.log('wait 5m for disconnect user: ' + user.id);
 	user.timer = setTimeout(function() {
 		console.log('user disconnected: ' + user.id);
 		user.timer = null;
 		delete PushServer.users[user.id];
-	}, 5000);
+	}, 5*60*1000);
 
 	next(200);
 });

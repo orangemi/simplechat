@@ -8,8 +8,8 @@
 		"node-json-minify" : "*",
 		"dateformatter" : "*",
 		"underscore" : "*",
-		"socket.io" : "1.0.0-pre2",
-		"socket.io-client" : "1.0.0-pre2"
+		"socket.io" : "1.0.0-pre",
+		"socket.io-client" : "1.0.0-pre"
 	},
 	"contributors": [
 		{

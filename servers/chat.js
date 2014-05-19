@@ -14,17 +14,15 @@ var redis = require('redis');
 var ChatServer = {
 	users : {},
 	groups : {},
-	sessions : {},
 
 	onPushGroup : function(name, message) {
 		var self = this;
-
 		var group = this.groups[name] || [];
 		if (!group || !group.length) {
 			console.log('no such a group or no one in "' + group + '".');
 			return;
 		}
-		
+
 		var sessions = [];
 		group.forEach(function(userId) {
 			var user = self.users[userId];
@@ -33,7 +31,6 @@ var ChatServer = {
 		});
 		console.log('send message to ' + sessions.length + ' users');
 		app.sessionManager.send(sessions, 'chat', message);
-		//console.log("send to connector '" + connector.id + "' with " + users.length + " users message " + message);
 	},
 
 	onJoinGroup : function(name, userId) {
@@ -78,11 +75,10 @@ var ChatServer = {
 				var olduser = self.users[user.id];
 				if (olduser) {
 					var oldsession = olduser.session;
-					delete self.sessions[oldsession.id];
 				}
 
-				var user = self.users[user.id] = { id : user.id, session : session };
-				self.sessions[user._id] = session;
+				var newuser = self.users[user.id] = { id : user.id, session : session };
+				session.user = newuser;
 			});
 		});
 	}
@@ -94,6 +90,7 @@ app.onCommand('connector::user_online', function (connector, params, next) {
 	session = app.sessionManager.get(params._id)
 			|| app.sessionManager.create2({ _id: params._id, connector: connector });
 	var user = ChatServer.users[params.id] || { id : params.id };
+
 	if (user.timer) {
 		clearTimeout(user.timer);
 		delete user.timer;
@@ -101,7 +98,7 @@ app.onCommand('connector::user_online', function (connector, params, next) {
 	}
 
 	user.session = session;
-	session.user = user;
+	ChatServer.users[params.id] = session.user = user;
 
 	console.log('user add ' + user.id);
 
@@ -113,7 +110,6 @@ app.onCommand('connector::user_offline', function (connector, params, next) {
 	if (!session) return;
 
 	var user = session.user;
-//	console.log('user disconnect: ' + user.id);
 	if (!user || user.session != session) {
 		app.sessionManager.drop(session);
 		next(200);
@@ -122,18 +118,18 @@ app.onCommand('connector::user_offline', function (connector, params, next) {
 
 	app.sessionManager.drop(session);
 	//TODO clear rooms in 5s if nobody login;
-	console.log('wait 5s for disconnect user: ' + user.id);
+	console.log('wait 5m for disconnect user: ' + user.id);
 	user.timer = setTimeout(function() {
 		console.log('user disconnected: ' + user.id);
 		user.timer = null;
-		for (var name in ChatServer.groups) {
-			var group = ChatServer.groups[name];
-			var index = group.indexOf(user.id);
-			if (index >= 0) group.splice(index, 1);
-			if (!group.length) delete ChatServer.groups[name];
-		}
+		// for (var name in ChatServer.groups) {
+		// 	var group = ChatServer.groups[name];
+		// 	var index = group.indexOf(user.id);
+		// 	if (index >= 0) group.splice(index, 1);
+		// 	if (!group.length) delete ChatServer.groups[name];
+		// }
 		delete ChatServer.users[user.id];
-	}, 5000);
+	}, 5*60*1000);
 
 	next(200);
 });

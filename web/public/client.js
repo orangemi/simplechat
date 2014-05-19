@@ -5,78 +5,41 @@ var log = function(msg) {
 	console.log(date + ' ' + msg);
 };
 
-// var host = 'localhost';
-// var port = 8001;
-//var host = '172.16.32.30';
-//var port = 8001;
-var host = 'localhost';
-var port = 8001;
-
-log('connecting...');
-var socket = io.connect('ws://' + host + ':' + port, {'reconnect' : false});
-
-var timer;
-
-socket.on('message', function (router, data, callback) {
-	log(router + data.toString());
-	console.log(data);
-	//console.log(arguments);
-	callback(200);
-});
-
-var username = 'mwj1';
+var username = 'mwj2';
 var password = '1';
 
+$.ajax({
+	type : 'GET',
+	url  : 'http://localhost/ourwar/server/game/auth/login',
+	data : { username:username, password: password, action:'normal' },
+	dataType: 'jsonp',
+	jsonp: "jsoncallback",
+	success : function(data) {
+		next(data.result);
+	}
+});
 
+next = function(res) {
+	var host = res.socketHost;
+	var port = res.socketPort;
 
+	log('connecting...');
+	var socket = io.connect('ws://' + host + ':' + port, {'reconnect' : false});
+	socket.on('connect', function() {
+		log('connected');
+		socket.on('disconnect', function() {
+			// clearInterval(timer);
+			log('disconnect');
+			socket.disconnect();
+		});
+		socket.on('message', function (router, data, callback) {
+			log(router + ': ' + JSON.stringify(data));
+			callback(200);
+		});
 
-socket.on('connect', function() {
-	log('connected');
-
-	$.ajax({
-		type : 'GET',
-		url  : 'http://localhost/ourwar/server/game/auth/login',
-		data : { username:username, password: password, action:'normal' },
-		dataType: 'jsonp',
-		jsonp: "jsoncallback",
-		success : function(data) {
-			var session = data.result.key;
-			next(session);
-		}
-	});
-
-	next = function(session) {
-		log('start login session: ' + session);
-		socket.emit('message', 'connector.login', { key : session }, function(code) {
+		log('start login session: ' + res.key);
+		socket.emit('message', 'gate.login', { key : res.key }, function(code) {
 			log('login response: ' + code);
 		});
-	};
-
-	// setTimeout(function() {
-	// 	log('send spread.ping');
-	// 	socket.emit('message', 'spread.ping', {}, function(code) {
-	// 		log('response on spread.ping:' + code);
-	// 	})
-	// 	setTimeout(function() {
-	// 		log('send connector.ping');
-	// 		socket.emit('message', 'connector.ping', {}, function(code) {
-	// 			log('response on connector.ping:' + code);
-	// 		})
-	// 	}, 2000);
-	// }, 2000);
-
-	// timer = setInterval(function() {
-	// 	log('send connector.ping');
-	// 	socket.emit('message', 'connector.ping', {}, function (code) {
-	// 		log('response on ping:' + code);
-	// 	});
-	// }, 1000);
-
-});
-
-socket.on('disconnect', function() {
-	// clearInterval(timer);
-	log('disconnect');
-	socket.disconnect();
-});
-
+	});
+};

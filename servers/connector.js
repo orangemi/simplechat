@@ -23,6 +23,7 @@ app.onCommand('gate::user_login', function (server, params) {
 	var session = app.sessionManager.get(params._id);
 	if (!session) return;
 	console.log('session_logined');
+	console.log(params);
 	clearTimeout(session.loginTimer);
 	delete session.loginTimer;
 	session.userId = params.userId;
