@@ -5,14 +5,40 @@
 	<script src="jquery-2.1.0.js"></script>
 	<script src="iscroll-5.1.1.js"></script>
 	<!-- <script src="socket.io-client-0.9.16.js"></script> -->
-	<script src="socket.io-client-1.0.0-pre2.js"></script>
+	<script src="socket.io-client-1.0.0-pre.js"></script>
 	<script src="date.js"></script>
 </head>
 <body>
 	<h1>[Admin] SimpleChat</h1>
 	<div class="main">
-		<div class="server_list"></div>
-		<div class="server_detail"></div>
+		<div class="left">
+			<div class="title">Servers</div>
+			<div class="server_list"></div>
+		</div>
+		<div class="content">
+			<div class="title">Detail</div>
+			<div class="server_detail">
+				<div class="tabs">
+					<div class="overall">Overall</div>
+					<div class="servers">Servers</div>
+					<div class="sessions">Sessions</div>
+				</div>
+				<div class="pages">
+					<div class="overall"></div>
+					<div class="servers"></div>
+					<div class="sessions">
+						<table class="session_list">
+							<tr class="head">
+								<th>SessionID</th>
+								<th>IP</th>
+								<th>Sent (B)</th>
+								<th>Received (B)</th>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 	<div class="output">
 		<div class="buttons">

@@ -7,14 +7,14 @@ var app = new App({ id : appId, dir : __dirname });
 app.on('session_connect', function (session) {
 	//TODO when a session is connected.
 	//wait user login
-	console.log('session connected wait login...');
+	app.logger.log('session connected wait login...');
 
 	session.setBackEnd('gate', app.serverManager.get('gate-1'));
 	session.setBackEnd('chat', app.serverManager.get('chat-1'));
 	session.setBackEnd('pusher', app.serverManager.get('pusher-1'));
 
 	session.loginTimer = setTimeout(function() {
-		console.log('log timeout');
+		app.logger.log('log timeout');
 		session.disconnect({positive : true});
 	}, 5000);
 });
@@ -22,8 +22,7 @@ app.on('session_connect', function (session) {
 app.onCommand('gate::user_login', function (server, params) {
 	var session = app.sessionManager.get(params._id);
 	if (!session) return;
-	console.log('session_logined');
-	console.log(params);
+	app.logger.log('session_logined: ' + params.userId);
 	clearTimeout(session.loginTimer);
 	delete session.loginTimer;
 	session.userId = params.userId;
@@ -31,16 +30,16 @@ app.onCommand('gate::user_login', function (server, params) {
 	var serverEnd;
 	serverEnd = app.serverManager.get('chat-1');
 	if (serverEnd) serverEnd.command('user_online', { id : params.userId, _id : session._id });
-	else console.log('chat-1 is not ready');
+	else app.logger.log('chat-1 is not ready');
 
 	serverEnd = app.serverManager.get('pusher-1');
 	if (serverEnd) serverEnd.command('user_online', { id : params.userId, _id : session._id });
-	else console.log('pusher-1 is not ready');
+	else app.logger.log('pusher-1 is not ready');
 
 });
 
 app.on('session_disconnect', function (session) {
-	if (session.userId) console.log('user logout ' + session.userId);
+	if (session.userId) app.logger.log('user logout ' + session.userId);
 	
 	var serverEnd;
 	serverEnd = app.serverManager.get('chat-1');
@@ -51,7 +50,7 @@ app.on('session_disconnect', function (session) {
 
 //TODO test api
 app.onMessage('ping', function (session, data, next) {
-	console.log('ping from ' + session.id);
+	app.logger.log('ping from ' + session.id);
 	next(200);
 });
 
@@ -68,12 +67,10 @@ app.onCommand('kick_session', function (server, params, next) {
 	var _id = params._id;
 	if (!_id) return next(500);
 	var session = app.sessionManager.get(_id);
-	//console.log(app.sessionManager.sessions);
-	console.log('kick_session3 : ' + _id);
+	app.logger.log('kick_session3 : ' + _id);
 	if (!session) return next(400);
-	console.log('kick_session4 : ' + _id);
+	app.logger.log('kick_session4 : ' + _id);
 	session.disconnect({ positive: true });
 });
-
 
 app.start();

@@ -1,19 +1,14 @@
 var memcache = require('memcache');
 var redis = require('redis');
+var fs = require('fs');
+JSON.minify = JSON.minify || require('node-json-minify');
 
-var memcacheConfig = {
-	host : '172.16.32.30',
-	port : 11211
-};
-
-var redisConfig = {
-	host : "172.16.32.30",
-	port : 6379
-};
+var memcacheConfig = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/configs/memcache.json', 'utf8')));
+var redisConfig = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/configs/redis.json', 'utf8')));
 
 var memcacheClient = new memcache.Client(memcacheConfig.port, memcacheConfig.host);
 memcacheClient.on('error', function(err) {
-	console.log(err);
+	app.logger.log('memcache error: ' + err);
 	var self = this;
 	setTimeout(function() {
 		self.connect();
@@ -39,7 +34,7 @@ app.onMessage('login', function (session, params, next) {
 	}
 
 	memcacheClient.get('Session::' + key, function (err, uid) {
-		console.log('login key: ' + key + ' , _id: ' + session._id + ' , uid: ' + uid);
+		app.logger.log('login key: ' + key + ' , _id: ' + session._id + ' , uid: ' + uid);
 
 		if (!uid) return next(403, 'invalid session');
 		var olduser = users[uid];
@@ -55,7 +50,7 @@ app.onMessage('login', function (session, params, next) {
 			id : uid,
 			session : session
 		};
-		console.log('return 200 ' + uid);
+		app.logger.log('return 200 ' + uid);
 		next(200, '', uid);
 
 		session.connector.command('user_login', { userId: uid, _id: session._id});
@@ -77,7 +72,7 @@ redisSubscriber.on("message", function(channel, userIds) {
 	try {
 		userIds = JSON.parse(userIds);
 	} catch (e) {
-		console.log(e);
+		app.logger.log(e);
 	}
 
 	userIds.forEach(function(userId) {

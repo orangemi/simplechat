@@ -1,15 +1,14 @@
+var redis = require('redis');
+var fs = require('fs');
+JSON.minify = JSON.minify || require('node-json-minify');
+
+var redisConfig = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/configs/redis.json', 'utf8')));
+
 var argvs = process.argv.slice(2);
 var appId = argvs.shift() || 'chat-1'; // appId
 
 var App = require('../lib/Application');
 var app = new App({ id : appId, dir : __dirname });
-
-var redisConfig = {
-	"host" : "172.16.32.30",
-	"port" : "6379"
-};
-
-var redis = require('redis');
 
 var ChatServer = {
 	users : {},
@@ -19,7 +18,7 @@ var ChatServer = {
 		var self = this;
 		var group = this.groups[name] || [];
 		if (!group || !group.length) {
-			console.log('no such a group or no one in "' + group + '".');
+			app.logger.log('no such a group or no one in "' + group + '".');
 			return;
 		}
 
@@ -29,7 +28,7 @@ var ChatServer = {
 			if (!user) return;
 			sessions.push(user.session);
 		});
-		console.log('send message to ' + sessions.length + ' users');
+		app.logger.log('send message to ' + sessions.length + ' users');
 		app.sessionManager.send(sessions, 'chat', message);
 	},
 
@@ -41,7 +40,7 @@ var ChatServer = {
 		if (!group) group = self.groups[name] = [];
 		if (group.indexOf(userId) >= 0) return;
 		group.push(userId);
-		console.log(userId + " joined " + name);
+		app.logger.log(userId + " joined " + name);
 	},
 
 	onLeaveGroup : function(name, userId) {
@@ -52,7 +51,7 @@ var ChatServer = {
 		if (!group || !group.length) return;
 		var index = group.indexOf(u_id);
 		if (index >= 0) group.splice(index, 1);
-		console.log(u_id + " leave " + name);
+		app.logger.log(u_id + " leave " + name);
 	},
 
 	onUpdateGroup : function(names, userId) {
@@ -62,10 +61,10 @@ var ChatServer = {
 
 	syncUser : function(server) {
 		var self = this;
-		console.log('start sync users...');
+		app.logger.log('start sync users...');
 
 		server.command('list_users', {}, function (code, result) {
-			console.log('getting ' + result.length + ' users...');
+			app.logger.log('getting ' + result.length + ' users...');
 			result.forEach(function (user) {
 				var session = app.sessionManager.create2({
 					_id : user._id,
@@ -94,13 +93,13 @@ app.onCommand('connector::user_online', function (connector, params, next) {
 	if (user.timer) {
 		clearTimeout(user.timer);
 		delete user.timer;
-		console.log('user reconnected: ' + user.id);
+		app.logger.log('user reconnected: ' + user.id);
 	}
 
 	user.session = session;
 	ChatServer.users[params.id] = session.user = user;
 
-	console.log('user add ' + user.id);
+	app.logger.log('user add ' + user.id);
 
 	next(200);
 });
@@ -118,9 +117,9 @@ app.onCommand('connector::user_offline', function (connector, params, next) {
 
 	app.sessionManager.drop(session);
 	//TODO clear rooms in 5s if nobody login;
-	console.log('wait 5m for disconnect user: ' + user.id);
+	app.logger.log('wait 5m for disconnect user: ' + user.id);
 	user.timer = setTimeout(function() {
-		console.log('user disconnected: ' + user.id);
+		app.logger.log('user disconnected: ' + user.id);
 		user.timer = null;
 		// for (var name in ChatServer.groups) {
 		// 	var group = ChatServer.groups[name];
@@ -152,7 +151,7 @@ redisSubscriber.subscribe("pushGroup");
 redisSubscriber.subscribe("joinGroup");
 redisSubscriber.subscribe("leaveGroup");
 redisSubscriber.subscribe("updateGroup");
-console.log("redis start to listen pushGroup...");
+app.logger.log("redis start to listen pushGroup...");
 redisSubscriber.on("message", function(channel, params) {
 	try {
 		params = JSON.parse(params);

@@ -22,11 +22,9 @@ app.onCommand('session_disconnect', function (server, params) {
 
 app.onMessage('chat', function (session, params, next) {
 	session = app.sessionManager.get(session._id);
-	console.log(session);
 	if (!session) return;
 	var message = params.message;
 	var sessions = app.sessionManager.filter(function() { return true; });
-	console.log(message);
 	app.sessionManager.send(sessions, 'system', session.user.nick + ' say ' + message);
 });
 

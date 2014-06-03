@@ -1,6 +1,19 @@
 .hide { display: none; }
 .clear { clear: both; }
 
+.main .left { float : left; width: 200px; }
+.main .content { margin-left: 205px; }
+
+.server_list { min-height: 50px; }
+.server_list { border: solid 1px #000; }
+.server_list .single_server { }
+.server_list .single_server.active { background-color: blue; color: #fff; }
+
+.server_detail { min-height: 500px; }
+.server_detail { border: solid 1px #000; }
+
+.session_list .num { text-align: right; }
+
 .output {}
 .output>.title { font-size: 20px; font-weight: bold; height: 22px; line-height: 22px; }
 .output>.buttons { float: right; }

@@ -1,26 +1,25 @@
+var redis = require('redis');
+var fs = require('fs');
+JSON.minify = JSON.minify || require('node-json-minify');
+
+var redisConfig = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/configs/redis.json', 'utf8')));
+var redisClient = redis.createClient(redisConfig.port, redisConfig.host);
+var redisSubscriber = redis.createClient(redisConfig.port, redisConfig.host);
+
 var argvs = process.argv.slice(2);
 var appId = argvs.shift() || 'pusher-1'; // appId
 
 var App = require('../lib/Application');
 var app = new App({ id : appId, dir : __dirname });
 
-var redis = require('redis');
-var redisConfig = {
-	"host" : "172.16.32.30",
-	"port" : "6379"
-};
-
-var redisClient = redis.createClient(redisConfig.port, redisConfig.host);
-var redisSubscriber = redis.createClient(redisConfig.port, redisConfig.host);
-
 var PushServer = {
 	users : {},
 	syncUser : function(server) {
 		var self = this;
-		console.log('start sync users...');
+		app.logger.log('start sync users...');
 
 		server.command('list_users', {}, function (code, result) {
-			console.log('getting ' + result.length + ' users...');
+			app.logger.log('getting ' + result.length + ' users...');
 			result.forEach(function (user) {
 				var session = app.sessionManager.create2({
 					_id : user._id,
@@ -47,13 +46,13 @@ app.onCommand('connector::user_online', function (connector, params, next) {
 	if (user.timer) {
 		clearTimeout(user.timer);
 		delete user.timer;
-		console.log('user reconnected: ' + user.id);
+		app.logger.log('user reconnected: ' + user.id);
 	}
 
 	user.session = session;
 	PushServer.users[params.id] = session.user = user;
 
-	console.log('user add ' + user.id);
+	app.logger.log('user add ' + user.id);
 
 	next(200);
 });
@@ -63,7 +62,7 @@ app.onCommand('connector::user_offline', function (connector, params, next) {
 	if (!session) return;
 
 	var user = session.user;
-//	console.log('user disconnect: ' + user.id);
+//	app.logger.log('user disconnect: ' + user.id);
 	if (!user || user.session != session) {
 		app.sessionManager.drop(session);
 		next(200);
@@ -72,9 +71,9 @@ app.onCommand('connector::user_offline', function (connector, params, next) {
 
 	app.sessionManager.drop(session);
 	//TODO clear rooms in 5s if nobody login;
-	console.log('wait 5m for disconnect user: ' + user.id);
+	app.logger.log('wait 5m for disconnect user: ' + user.id);
 	user.timer = setTimeout(function() {
-		console.log('user disconnected: ' + user.id);
+		app.logger.log('user disconnected: ' + user.id);
 		user.timer = null;
 		delete PushServer.users[user.id];
 	}, 5*60*1000);
@@ -100,7 +99,7 @@ var eventIndex = 0;
 var spreading = function(eventId, cb) {
 	redisClient.hgetall('event.' + eventId, function(error, result) {
 		if (error || !result) {
-			console.log('something error when hgetall event.' + eventId);
+			app.logger.log('something error when hgetall event.' + eventId);
 			cb();
 			return;
 		}
@@ -112,7 +111,7 @@ var spreading = function(eventId, cb) {
 			receivers = eventInfo.users = JSON.parse(eventInfo.users);
 			params = eventInfo.params = JSON.parse(eventInfo.params);
 		} catch(e) {
-			console.log('something error when parse event.' + eventId);
+			app.logger.log('something error when parse event.' + eventId);
 			cb();
 			return;
 		}
@@ -120,7 +119,7 @@ var spreading = function(eventId, cb) {
 		//TODO
 		var sessions = [];
 		if (!receivers || !receivers.length) {
-			console.log('no receivers');
+			app.logger.log('no receivers');
 			cb();
 			return;
 		}
@@ -132,7 +131,7 @@ var spreading = function(eventId, cb) {
 			}
 		});
 
-		console.log('send event ' + eventId + ' to sessions ' + realReceivers.length + ' / ' + receivers.length + ' [' + realReceivers.join(',') + ']');
+		app.logger.log('send event ' + eventId + ' to sessions ' + realReceivers.length + ' / ' + receivers.length + ' [' + realReceivers.join(',') + ']');
 		if (sessions.length) app.sessionManager.send(sessions, 'push', params);
 		
 		cb();
@@ -175,20 +174,20 @@ var getEventReadIndex = function(cb) {
 getEventIndex(function() {
 	getEventReadIndex(function() {
 		check(function(error) {
-			console.log(error);
+			app.logger.log(error);
 		});
 	});
 });
 
 redisSubscriber.subscribe("pushEvent2Player");
 redisSubscriber.on("message", function(channel, eventId) {
-	console.log("channel " + channel + " has published " + eventId);
+	app.logger.log("channel " + channel + " has published " + eventId);
 	if (eventReadIndex < eventIndex) {
 		eventIndex = eventId;
 	} else {
 		eventIndex = eventId;
 		check(function(error) {
-			console.log(error);
+			app.logger.log(error);
 		});
 	}
 });
