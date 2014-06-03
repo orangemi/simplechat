@@ -13,7 +13,7 @@
 	<div class="main">
 		<div class="left">
 			<div class="title">Servers</div>
-			<div class="server_list"></div>
+			<div class="current_server_list"></div>
 		</div>
 		<div class="content">
 			<div class="title">Detail</div>
@@ -23,9 +23,25 @@
 					<div class="servers">Servers</div>
 					<div class="sessions">Sessions</div>
 				</div>
+				<div>&nbsp;</div>
 				<div class="pages">
-					<div class="overall"></div>
-					<div class="servers"></div>
+					<div class="overall">
+						<div>Server Sent: <span class="serverSentByte">0</span>(B)</div>
+						<div>Server Received: <span class="serverReceivedByte">0</span>(B)</div>
+						<div>Session Sent: <span class="sessionSentByte">0</span>(B)</div>
+						<div>Session Received: <span class="sessionReceivedByte">0</span>(B)</div>
+					</div>
+					<div class="servers">
+						<table class="server_list">
+							<tr class="head">
+								<th>ServerID</th>
+								<th>IP</th>
+								<th>Sent (B)</th>
+								<th>Received (B)</th>
+							</tr>
+						</table>
+
+					</div>
 					<div class="sessions">
 						<table class="session_list">
 							<tr class="head">

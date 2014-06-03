@@ -27,7 +27,7 @@ var log = logger.log.bind(logger);
 
 log("connecting...");
 //var socket = io.connect("ws://localhost:3333", {"reconnect" : false});
-var socket = io.connect("ws://localhost:3333", {"reconnect" : false});
+var socket = io.connect("ws://172.16.32.30:3333", {"reconnect" : false});
 var timer;
 socket.on("connect", function() {
 	log("admin connected");
@@ -36,7 +36,7 @@ socket.on("connect", function() {
 	socket.emit("message", "list", {}, function(code, list) {
 		list.forEach(function(one) {
 			log(JSON.stringify(one));
-			$("<div>").addClass("single_server").html(one.id).appendTo($(".server_list")).click(function() {
+			$("<div>").addClass("single_server").html(one.id).appendTo($(".current_server_list")).click(function() {
 				$(this).siblings().removeClass("active");
 				$(this).addClass("active");
 				showServerDetail(one);
@@ -45,19 +45,44 @@ socket.on("connect", function() {
 	});
 });
 
-function showServerDetail(server) {
-	$(".session_list tr").not(".head").remove();
-	
-	socket.emit("message", "status", server.id, function(code, detail) {
-		log(JSON.stringify(detail));
+var timer = null;
 
-		detail.sessions.sessions.forEach(function(session) {
-			$("<tr>")
-			.append($("<td>").html(session.id))
-			.append($("<td>").html(session.remoteAddr))
-			.append($("<td>").addClass("num").html(session.sentByte))
-			.append($("<td>").addClass("num").html(session.receivedByte))
-			.appendTo($(".session_list"));
+function showServerDetail(server) {
+	if (timer) clearInterval(timer);
+	
+	$(".session_list tr").not(".head").remove();
+	$(".server_list tr").not(".head").remove();
+
+	var refresh = function() {
+		socket.emit("message", "status", server.id, function(code, detail) {
+			log(JSON.stringify(detail));
+
+			$(".session_list tr").not(".head").remove();
+			$(".server_list tr").not(".head").remove();
+
+			$(".overall .serverSentByte").html(detail.servers.sentByte);
+			$(".overall .serverReceivedByte").html(detail.servers.receivedByte);
+			$(".overall .sessionSentByte").html(detail.sessions.sentByte);
+			$(".overall .sessionReceivedByte").html(detail.sessions.receivedByte);
+
+			detail.servers.servers.forEach(function(server) {
+				$("<tr>")
+				.append($("<td>").html(server.id))
+				.append($("<td>").html(server.remoteAddr))
+				.append($("<td>").addClass("num").html(server.sentByte))
+				.append($("<td>").addClass("num").html(server.receivedByte))
+				.appendTo($(".server_list"));
+			});
+			detail.sessions.sessions.forEach(function(session) {
+				$("<tr>")
+				.append($("<td>").html(session.id))
+				.append($("<td>").html(session.remoteAddr))
+				.append($("<td>").addClass("num").html(session.sentByte))
+				.append($("<td>").addClass("num").html(session.receivedByte))
+				.appendTo($(".session_list"));
+			});
 		});
-	});
+	};
+	refresh();
+	timer = setInterval(refresh, 1000);
 }

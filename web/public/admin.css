@@ -4,15 +4,17 @@
 .main .left { float : left; width: 200px; }
 .main .content { margin-left: 205px; }
 
-.server_list { min-height: 50px; }
-.server_list { border: solid 1px #000; }
-.server_list .single_server { }
-.server_list .single_server.active { background-color: blue; color: #fff; }
+.current_server_list { min-height: 50px; }
+.current_server_list { border: solid 1px #000; }
+.current_server_list .single_server { }
+.current_server_list .single_server.active { background-color: blue; color: #fff; }
 
 .server_detail { min-height: 500px; }
 .server_detail { border: solid 1px #000; }
+.server_detail>.tabs { width: 100%; }
+.server_detail>.tabs>div { display: inline-block; margin: 10px; }
 
-.session_list .num { text-align: right; }
+table .num { text-align: right; }
 
 .output {}
 .output>.title { font-size: 20px; font-weight: bold; height: 22px; line-height: 22px; }
