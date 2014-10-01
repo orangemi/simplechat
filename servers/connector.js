@@ -4,37 +4,33 @@ var appId = argvs.shift() || 'connector-1'; // appId
 var App = require('../lib/Application');
 var app = new App({ id : appId, dir : __dirname });
 
-app.on('session_connect', function (session) {
+app.on('session_connect', function (session, info, next) {
 	//TODO when a session is connected.
 	//wait user login
 	app.logger.log('session connected wait login...');
+	info = info || {};
+	info._id = session._id;
 
-	session.setBackEnd('gate', app.serverManager.get('gate-1'));
-	session.setBackEnd('chat', app.serverManager.get('chat-1'));
-	session.setBackEnd('pusher', app.serverManager.get('pusher-1'));
+	app.serverManager.get('gate-1').command('login', info, function (code, result) {
+		if (code != 200) return next(code, result);
 
-	session.loginTimer = setTimeout(function() {
-		app.logger.log('log timeout');
-		session.disconnect({positive : true});
-	}, 5000);
-});
+		session.setBackEnd('chat', app.serverManager.get('chat-1'));
+		session.setBackEnd('pusher', app.serverManager.get('pusher-1'));
+		session.userId = result.uid;
 
-app.onCommand('gate::user_login', function (server, params) {
-	var session = app.sessionManager.get(params._id);
-	if (!session) return;
-	app.logger.log('session_logined: ' + params.userId);
-	clearTimeout(session.loginTimer);
-	delete session.loginTimer;
-	session.userId = params.userId;
+		var serverEnd;
+		serverEnd = app.serverManager.get('chat-1');
+		if (serverEnd) serverEnd.command('user_online', { id : result.uid, _id : session._id });
+		else app.logger.log('chat-1 is not ready');
 
-	var serverEnd;
-	serverEnd = app.serverManager.get('chat-1');
-	if (serverEnd) serverEnd.command('user_online', { id : params.userId, _id : session._id });
-	else app.logger.log('chat-1 is not ready');
+		serverEnd = app.serverManager.get('pusher-1');
+		if (serverEnd) serverEnd.command('user_online', { id : result.uid, _id : session._id });
+		else app.logger.log('pusher-1 is not ready');
 
-	serverEnd = app.serverManager.get('pusher-1');
-	if (serverEnd) serverEnd.command('user_online', { id : params.userId, _id : session._id });
-	else app.logger.log('pusher-1 is not ready');
+		next(200);
+
+	});
+	
 
 });
 

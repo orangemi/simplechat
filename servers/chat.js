@@ -128,7 +128,7 @@ app.onCommand('connector::user_offline', function (connector, params, next) {
 		// 	if (!group.length) delete ChatServer.groups[name];
 		// }
 		delete ChatServer.users[user.id];
-	}, 5*60*1000);
+	}, 5 * 60 * 1000);
 
 	next(200);
 });
@@ -147,21 +147,22 @@ app.start();
 
 var redisSubscriber = redis.createClient(redisConfig.port, redisConfig.host);
 
-redisSubscriber.subscribe("pushGroup");
-redisSubscriber.subscribe("joinGroup");
-redisSubscriber.subscribe("leaveGroup");
-redisSubscriber.subscribe("updateGroup");
+// redisSubscriber.subscribe("pushGroup");
+// redisSubscriber.subscribe("joinGroup");
+// redisSubscriber.subscribe("leaveGroup");
+redisSubscriber.subscribe("push2group");
 app.logger.log("redis start to listen pushGroup...");
-redisSubscriber.on("message", function(channel, params) {
+redisSubscriber.on("message", function(channel, event) {
 	try {
-		params = JSON.parse(params);
+		event = JSON.parse(event);
 	} catch (e) {
-		consoel.log('push params error with ' + params);
+		consoel.log('push event error with ' + event);
 		return;
 	}
 
-	params = params || {};
-	switch (channel) {
+	//event = params || {};
+	var params = event.params;
+	switch (event.router) {
 		case 'pushGroup' :
 			ChatServer.onPushGroup(params.name, params.message);
 			break;
@@ -175,6 +176,7 @@ redisSubscriber.on("message", function(channel, params) {
 			ChatServer.onUpdateGroup(params.names, params.u_id);
 			break;
 		default:
+			console.log("no router support: ", event.router);
 
 	}
 });

@@ -93,101 +93,28 @@ app.start();
 /// redis listener ///
 //////////////////////
 
-var eventReadIndex = 0;
-var eventIndex = 0;
-
-var spreading = function(eventId, cb) {
-	redisClient.hgetall('event.' + eventId, function(error, result) {
-		if (error || !result) {
-			app.logger.log('something error when hgetall event.' + eventId);
-			cb();
-			return;
-		}
-
-		var eventInfo = result;
-		var receivers, params, realReceivers = [];
-
-		try {
-			receivers = eventInfo.users = JSON.parse(eventInfo.users);
-			params = eventInfo.params = JSON.parse(eventInfo.params);
-		} catch(e) {
-			app.logger.log('something error when parse event.' + eventId);
-			cb();
-			return;
-		}
-
-		//TODO
-		var sessions = [];
-		if (!receivers || !receivers.length) {
-			app.logger.log('no receivers');
-			cb();
-			return;
-		}
-
-		receivers.forEach(function(userId) {
-			if (PushServer.users[userId]) {
-				realReceivers.push(userId);
-				sessions.push(PushServer.users[userId].session);
-			}
-		});
-
-		app.logger.log('send event ' + eventId + ' to sessions ' + realReceivers.length + ' / ' + receivers.length + ' [' + realReceivers.join(',') + ']');
-		if (sessions.length) app.sessionManager.send(sessions, 'push', params);
-		
-		cb();
-		return;
-	});
-};
-
-var check = function(cb) {
-	if (!eventReadIndex || !eventIndex) {
-		//cb({msg:"eventIndex or eventReadIndex not ready"});
-		//return;
-	}
-	if (eventReadIndex >= eventIndex) {
-		cb({msg:"no event to spread... "});
+redisSubscriber.subscribe("push2ids");
+redisSubscriber.on("message", function(channel, event) {
+	try {
+		event = JSON.parse(event);
+	} catch (e) {
+		consoel.log('push event error with ', event);
 		return;
 	}
 
-	spreading(eventReadIndex + 1, function() {
-		redisClient.incr('eventReadIndex', function(error, result) {
-			eventReadIndex = result;
-			check(cb);
-		});
-	});
-};
-
-var getEventIndex = function(cb) {
-	redisClient.get('eventIndex', function(error, result) {
-		eventIndex = Math.floor(result);
-		cb();
-	});
-};
-
-var getEventReadIndex = function(cb) {
-	redisClient.get('eventReadIndex', function(error, result) {
-		eventReadIndex = Math.floor(result);
-		cb();
-	});
-};
-
-getEventIndex(function() {
-	getEventReadIndex(function() {
-		check(function(error) {
-			app.logger.log(error);
-		});
-	});
-});
-
-redisSubscriber.subscribe("pushEvent2Player");
-redisSubscriber.on("message", function(channel, eventId) {
-	app.logger.log("channel " + channel + " has published " + eventId);
-	if (eventReadIndex < eventIndex) {
-		eventIndex = eventId;
-	} else {
-		eventIndex = eventId;
-		check(function(error) {
-			app.logger.log(error);
-		});
+	var sessions = [];
+	var realReceivers = [];
+	if (!event.users || !event.users.length) {
+		console.log('push no user');
+		return;
 	}
+
+	event.users.forEach(function(userId) {
+		if (!PushServer.users[userId]) return;
+		realReceivers.push(userId);
+		sessions.push(PushServer.users[userId].session);
+	});
+
+	app.logger.log('send event ' + event.router + ' to sessions ' + realReceivers.length + ' / ' + event.users.length + ' [' + realReceivers.join(',') + ']');
+	if (sessions.length) app.sessionManager.send(sessions, event.router, event.params);
 });

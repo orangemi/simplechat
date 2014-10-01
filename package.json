@@ -7,14 +7,10 @@
 		"mime" : "*",
 		"node-json-minify" : "*",
 		"dateformatter" : "*",
-		"underscore" : "*",
-		"socket.io" : "1.0.0-pre",
-		"socket.io-client" : "1.0.0-pre"
+		"underscore" : "*"
 	},
-	"contributors": [
-		{
-			"name": "Orange Mi",
-			"email": "orgmi@sina.com"
-		}
-	]
+	"contributors": [{
+		"name": "Orange Mi",
+		"email": "orgmi@sina.com"
+	}]
 }

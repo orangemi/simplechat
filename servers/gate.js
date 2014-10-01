@@ -24,37 +24,33 @@ var app = new App({ id : appId, dir : __dirname });
 
 var users = {};
 
-app.onMessage('login', function (session, params, next) {
-	if (app.sessionManager.get(session._id)) return next(403, 'you cannot relogin');
+app.onCommand('connector::login', function (server, params, next) {
+	//if (app.sessionManager.get(params._id)) return next(403, 'you cannot relogin');
 	params = params || {};
 	var key = params.key;
-	if (!key || typeof(key) !== 'string') {
-		next(403, 'no userid or session');
-		return;
-	}
+	if (!key || typeof(key) !== 'string') return next(403, 'no userid or session');
 
 	memcacheClient.get('Session::' + key, function (err, uid) {
-		app.logger.log('login key: ' + key + ' , _id: ' + session._id + ' , uid: ' + uid);
+		app.logger.log('login key: ' + key + ' , _id: ' + params._id + ' , uid: ' + uid);
 
 		if (!uid) return next(403, 'invalid session');
 		var olduser = users[uid];
-		if (olduser && olduser.session && olduser.session._id != session._id) {
+		if (olduser && olduser._id != params._id) {
 			//TODO kick old session (olduser.session)
-			app.sessionManager.send([olduser.session], 'logout', 'invalid session');
-			olduser.session.connector.command('kick_session', { _id : olduser.session._id });
-			app.sessionManager.drop(olduser.session);
+			app.sessionManager.send([olduser._id], 'logout', {});
+			olduser.connector.command('kick_session', { _id : olduser._id });
+			//app.sessionManager.drop(olduser.session);
 			delete users[uid];
 		}
-		session = app.sessionManager.create2(session);
+		//session = app.sessionManager.create2(session);
 		var user = users[uid] = {
 			id : uid,
-			session : session
+			connector : server,
+			_id : params._id,
+			//session : session
 		};
 		app.logger.log('return 200 ' + uid);
-		next(200, '', uid);
-
-		session.connector.command('user_login', { userId: uid, _id: session._id});
-
+		next(200, {uid: uid});
 	});
 });
 
